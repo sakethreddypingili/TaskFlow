@@ -33,3 +33,38 @@ function isOverdue(dueDate, status) {
 }
 
 function escapeHTML(str) {
+  if (!str) return "";
+  let div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function loadFromLocalStorage() {
+  let saved = localStorage.getItem(STORAGE_KEY);
+  tasks = saved ? JSON.parse(saved) : getSampleTasks();
+}
+
+function getSampleTasks() {
+  let now = Date.now();
+  return [
+    { id: generateId(), title: "Welcome to TaskFlow 👋", desc: "Drag to move, or right-click.", status: "todo", priority: "low", dueDate: "", labels: ["welcome"], order: 0, createdAt: now },
+    { id: generateId(), title: "Design Landing Page Hero Section", desc: "Use a clean charcoal black theme.", status: "inprogress", priority: "high", dueDate: "", labels: ["design"], order: 0, createdAt: now }
+  ];
+}
+
+function pushToUndoStack() {
+  if (undoStack.length >= 15) undoStack.shift();
+  undoStack.push(JSON.parse(JSON.stringify(tasks)));
+}
+
+function undo() {
+  if (undoStack.length === 0) return showToast("Nothing to undo!", "warning");
+  tasks = undoStack.pop();
+  saveToLocalStorage();
+  renderBoard();
+  showToast("Last action undone successfully!", "success");
+}
