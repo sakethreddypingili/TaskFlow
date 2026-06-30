@@ -91,3 +91,97 @@ function createTaskCardElement(task) {
   card.innerHTML =
     '<div class="task-card-top"><span class="priority-badge ' + task.priority + '">' + task.priority + '</span>' +
     '<button class="task-card-menu-btn"><i class="ph ph-dots-three-vertical"></i></button></div>' +
+    '<div class="task-card-title">' + escapeHTML(task.title) + '</div>' +
+    (task.desc ? '<div class="task-card-desc">' + escapeHTML(task.desc) + '</div>' : '') + labelsHTML +
+    '<div class="task-card-footer">' +
+    (task.dueDate ? '<div class="task-due-date ' + (overdue ? 'overdue' : '') + '"><i class="ph ph-calendar"></i><span>' + formatDate(task.dueDate) + (overdue ? ' (Overdue)' : '') + '</span></div>' : '<div></div>') +
+    '<div class="task-card-actions"><button class="edit-btn"><i class="ph ph-pencil-simple"></i></button><button class="delete-btn"><i class="ph ph-trash"></i></button></div></div>';
+
+  card.addEventListener("dragstart", function (e) {
+    draggedTaskId = task.id;
+    card.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", task.id);
+    setTimeout(function () { card.classList.add("drag-ghost"); }, 0);
+  });
+  card.addEventListener("dragend", function () {
+    card.classList.remove("dragging", "drag-ghost");
+    dropPlaceholder.remove();
+    draggedTaskId = null;
+  });
+  card.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    openContextMenu(e, task.id);
+  });
+  return card;
+}
+
+function openTaskModal(task = null, defaultStatus = "todo") {
+  let overlay = document.getElementById("taskModalOverlay");
+  document.getElementById("taskForm").reset();
+  if (task) {
+    document.getElementById("modalTitle").textContent = "Edit Task";
+    document.getElementById("taskId").value = task.id;
+    document.getElementById("taskTitle").value = task.title;
+    document.getElementById("taskDesc").value = task.desc || "";
+    document.getElementById("taskStatus").value = task.status;
+    document.getElementById("taskPriority").value = task.priority;
+    document.getElementById("taskDueDate").value = task.dueDate || "";
+    document.getElementById("taskLabels").value = task.labels.join(", ");
+  } else {
+    document.getElementById("modalTitle").textContent = "Add New Task";
+    document.getElementById("taskId").value = "";
+    document.getElementById("taskStatus").value = defaultStatus;
+    document.getElementById("taskPriority").value = "medium";
+  }
+  overlay.classList.add("active");
+  setTimeout(function () { document.getElementById("taskTitle").focus(); }, 100);
+}
+
+function closeTaskModal() { document.getElementById("taskModalOverlay").classList.remove("active"); }
+function openShortcutsModal() { document.getElementById("shortcutsModalOverlay").classList.add("active"); }
+function closeShortcutsModal() { document.getElementById("shortcutsModalOverlay").classList.remove("active"); }
+
+function openContextMenu(e, taskId) {
+  let menu = document.getElementById("contextMenu");
+  if (!menu) return;
+  contextMenuTaskId = taskId;
+  menu.classList.add("active");
+  let left = e.clientX, top = e.clientY;
+  if (left + 180 > window.innerWidth) left = window.innerWidth - 192;
+  if (top + 280 > window.innerHeight) top = window.innerHeight - 292;
+  menu.style.left = left + "px";
+  menu.style.top = top + "px";
+}
+
+function closeContextMenu() {
+  let menu = document.getElementById("contextMenu");
+  if (menu) menu.classList.remove("active");
+  contextMenuTaskId = null;
+}
+
+function initTheme() {
+  let saved = localStorage.getItem(THEME_KEY) || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  setTheme(saved);
+}
+
+function setTheme(theme) {
+  let toggle = document.getElementById("themeToggle");
+  let icon = toggle ? toggle.querySelector("i") : null;
+  if (theme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+    document.body.setAttribute("data-theme", "dark");
+    localStorage.setItem(THEME_KEY, "dark");
+    if (icon) icon.className = "ph ph-sun";
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    document.body.removeAttribute("data-theme");
+    localStorage.setItem(THEME_KEY, "light");
+    if (icon) icon.className = "ph ph-moon";
+  }
+}
+
+function toggleTheme() {
+  let theme = localStorage.getItem(THEME_KEY) === "dark" ? "light" : "dark";
+  setTheme(theme);
+  showToast("Theme switched to " + theme + " mode", "info");
+}
