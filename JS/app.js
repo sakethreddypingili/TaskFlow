@@ -288,4 +288,3 @@ function initEventBindings() {
       if (task) openTaskModal(task);
     }
   });
-
